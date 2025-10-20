@@ -3,6 +3,7 @@ package com.example.lists
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -12,9 +13,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
@@ -34,36 +37,62 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.lists.ComposeActivity.Companion.EXTRA_TEXT
 
-class MainActivity : AppCompatActivity() {
-    private val chiuitListState = mutableStateOf(ChiuitStore.getAllData())
-
-
+class MainActivity : ComponentActivity() {
+    
     private var resultLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 val data: Intent? = result.data
-                setChiuitText(data?.getStringExtra(EXTRA_TEXT))
+                val newText = data?.getStringExtra(EXTRA_TEXT)
+                if (!newText.isNullOrEmpty()) {
+                    addNewChiuit(newText)
+                }
             }
         }
 
+    private var onAddChiuit: ((String) -> Unit)? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { HomeScreen() }
-
+        setContent { 
+            HomeScreen(
+                onComposeClick = { composeChiuit() },
+                onShareClick = { shareChiuit(it) },
+                onAddChiuitCallback = { callback -> onAddChiuit = callback }
+            )
+        }
     }
 
     @Composable
-    private fun HomeScreen() {
+    private fun HomeScreen(
+        onComposeClick: () -> Unit,
+        onShareClick: (String) -> Unit,
+        onAddChiuitCallback: ((String) -> Unit) -> Unit
+    ) {
+        var chiuitList by remember { mutableStateOf(ChiuitStore.getAllData()) }
+        
+        // Set up the callback for adding new chiuits
+        onAddChiuitCallback { newText ->
+            chiuitList = chiuitList + Chiuit(newText)
+        }
+        
         Surface(color = Color.White) {
             Box(modifier = Modifier.fillMaxSize()) {
-                // TODO 5: Use a vertical list that composes and displays only the visible items.
-                // TODO 6: Make use of Compose DSL to describe the content of the list and make sure
-                // to instantiate a [ChiuitListItem] for every item in [chiuitListState.value].
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(chiuitList) { chiuit ->
+                        ChiuitListItem(
+                            chiuit = chiuit,
+                            onShareClick = onShareClick
+                        )
+                    }
+                }
                 FloatingActionButton(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(16.dp),
-                    onClick = { composeChiuit() },
+                    onClick = onComposeClick,
                 ) {
                     Icon(
                         Icons.Filled.Edit,
@@ -75,7 +104,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     @Composable
-    private fun ChiuitListItem(chiuit: Chiuit) {
+    private fun ChiuitListItem(
+        chiuit: Chiuit,
+        onShareClick: (String) -> Unit
+    ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -92,9 +124,10 @@ class MainActivity : AppCompatActivity() {
                     modifier = Modifier
                         .weight(0.2f)
                         .padding(8.dp),
-                    onClick = { shareChiuit(chiuit.description) }) {
+                    onClick = { onShareClick(chiuit.description) }
+                ) {
                     Icon(
-                        Icons.Filled.Send,
+                        Icons.AutoMirrored.Filled.Send,
                         stringResource(R.string.send_action_icon_content_description)
                     )
                 }
@@ -115,7 +148,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         val intentChooser = Intent.createChooser(sendIntent, "")
-
         startActivity(intentChooser)
     }
 
@@ -123,31 +155,26 @@ class MainActivity : AppCompatActivity() {
     Defines an *explicit* intent which will be used to start ComposeActivity.
      */
     private fun composeChiuit() {
-            val intent = Intent(this, ComposeActivity::class.java).apply {
-                // Attach extra text data
-                putExtra(Intent.EXTRA_TEXT, "")
-                type = "text/plain"
-            }
+        val intent = Intent(this, ComposeActivity::class.java).apply {
+            // Attach extra text data
+            putExtra(Intent.EXTRA_TEXT, "")
+            type = "text/plain"
+        }
 
         resultLauncher.launch(intent)
-
-        // TODO 3: Start a new activity with the previously defined intent.
-
-
     }
 
-    private fun setChiuitText(resultText: String?) {
-        // TODO 7: Check if text is not null or empty, instantiate a new chiuit object
-
-        //  then add it to the [chiuitListState.value].
-
+    private fun addNewChiuit(text: String) {
+        onAddChiuit?.invoke(text)
     }
 
     @Preview(showBackground = true)
     @Composable
     private fun DefaultPreview() {
-        HomeScreen()
+        HomeScreen(
+            onComposeClick = {},
+            onShareClick = {},
+            onAddChiuitCallback = {}
+        )
     }
 }
-
-

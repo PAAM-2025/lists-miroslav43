@@ -23,12 +23,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 
 
-// TODO 4: All application components must be added to manifest. Make sure to add this one.
 class ComposeActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,7 +51,7 @@ class ComposeActivity : ComponentActivity() {
                         .padding(16.dp),
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text(text) }
+                    label = { Text(stringResource(R.string.type_some_text)) }
                 )
                 FloatingActionButton(
                     modifier = Modifier
@@ -61,7 +61,7 @@ class ComposeActivity : ComponentActivity() {
                 ) {
                     Icon(
                         Icons.Filled.Check,
-                        "des"
+                        stringResource(R.string.check_action_icon_content_description)
                     )
                 }
             }
